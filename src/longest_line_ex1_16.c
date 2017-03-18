@@ -1,52 +1,47 @@
 #include <stdio.h>
 #include <stdbool.h>
+#include "lines.h"
+
 #define MAXLINE 1000 /* maximum input line length */
+const int NUM_LEADING_CHARS_WITH_ELLIPSIS = 6;
 
-bool getoneline(FILE *stream, char result[], int *result_len, int maxlen);
-void copy(char to[], char from[]);
-
-/* print the longest input line */
-void print_longest_line_maxlen(FILE *stream_in, FILE *stream_out, int maxlen) {
-	int len; /* current line length */
-	int max; /* maximum length seen so far */
-	char line[maxlen]; /* current input line */
-	char longest[maxlen]; /* longest line saved here */
-	longest[0] = '\0';
-	max = 0;
-	while (getoneline(stream_in, line, &len, maxlen)) {
-		if (len > max) {
-			max = len;
-			copy(longest, line);
-		}
-	}
-	/* works also for empty inpout */
-	fprintf(stream_out, "%d (\"%s\")\n", max, longest);
+int consume_end_of_line(FILE *stream_in, size_t buffer_size, bool *preached_eol) {
+	char garbage[buffer_size];
+	bool reached_eof;
+	int len;
+	getline_chunk(stream_in, garbage, buffer_size, &len, preached_eol,
+			&reached_eof);
+	return len;
 }
 
-void print_longest_line(FILE *stream_in, FILE *stream_out) {
-	print_longest_line_maxlen(stream_in, stream_out, MAXLINE);
+void replace_string_end_with_ellipsis(char string[], int str_len) {
+	if (NUM_LEADING_CHARS_WITH_ELLIPSIS >= 4 /* save leading char (at least) */
+	&& str_len > NUM_LEADING_CHARS_WITH_ELLIPSIS) {
+		/* finish with "..." */
+		string[str_len - 2] = string[str_len - 3] = string[str_len - 4] = '.';
+	}
 }
 
-/* getoneline: read a line into "result", return length */
-bool getoneline(FILE *stream, char result[], int *result_len, int maxlen) {
-	int c, len = 0;
-	while ((c = fgetc(stream)) != EOF && c != '\n') {
-		if (len < maxlen - 1)
-			result[len] = c;
-		len++;
-	}
-	if (c == EOF && len == 0)
+bool get_first_line_chunk(FILE *stream_in, char line[], size_t maxlen,
+		int* plen, bool *preached_eol) {
+	bool reached_eof;
+	return getline_chunk(stream_in, line, maxlen, plen, preached_eol,
+			&reached_eof);
+}
+
+bool get_line(FILE *stream_in, char line[], size_t maxlen, int *plen) {
+	int len;
+	bool reached_eol;
+	if (!get_first_line_chunk(stream_in, line, maxlen, &len, &reached_eol))
 		return false;
 
-	*result_len = len;
+	int total_len = len; /* current line length */
 
-	if (len < maxlen) {
-		result[len] = '\0';
-	} else {
-		result[maxlen - 1] = '\0';
-		if (maxlen > 4) /* save leading char (at least); finish with "..." */
-			result[maxlen - 2] = result[maxlen - 3] = result[maxlen - 4] = '.';
+	while (!reached_eol) {
+		total_len += consume_end_of_line(stream_in, maxlen, &reached_eol);
 	}
+
+	*plen = total_len;
 
 	return true;
 }
@@ -57,4 +52,30 @@ void copy(char to[], char from[]) {
 	i = 0;
 	while ((to[i] = from[i]) != '\0')
 		++i;
+}
+
+/* print the longest input line */
+void print_longest_line_maxlen(FILE *stream_in, FILE *stream_out, size_t maxlen) {
+	int len; /* current line length */
+	int max; /* maximum length seen so far */
+	char line[maxlen]; /* current input line */
+	char longest[maxlen]; /* longest line saved here */
+	longest[0] = '\0';
+	max = 0;
+	while (get_line(stream_in, line, maxlen, &len)) {
+		if (len > max) {
+			max = len;
+			copy(longest, line);
+		}
+	}
+	if (max >= maxlen) {
+		replace_string_end_with_ellipsis(longest, maxlen);
+	}
+
+	/* works also for empty input */
+	fprintf(stream_out, "%d (\"%s\")\n", max, longest);
+}
+
+void print_longest_line(FILE *stream_in, FILE *stream_out) {
+	print_longest_line_maxlen(stream_in, stream_out, MAXLINE);
 }
