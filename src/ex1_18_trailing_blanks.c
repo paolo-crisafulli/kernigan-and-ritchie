@@ -21,8 +21,7 @@ static int trim_trailing_blanks(char line[], int len) {
 }
 
 static void print_line_without_trailing_blanks(FILE* stream_in,
-		FILE *stream_out,
-		size_t maxline, int *pline_len, bool *preached_eof) {
+		FILE *stream_out, size_t maxline, int *pline_len, bool *preached_eof) {
 	char line[maxline];
 	int total_len = 0;
 
