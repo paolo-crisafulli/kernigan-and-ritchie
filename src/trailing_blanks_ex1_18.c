@@ -3,11 +3,11 @@
 
 #include "lines.h"
 
-bool is_blank_char(char c) {
+static bool is_blank_char(char c) {
 	return c == ' ' || c == '\t';
 }
 
-int trim_trailing_blanks(char line[], int len) {
+static int trim_trailing_blanks(char line[], int len) {
 	int i;
 	for (i = len - 1; i >= 0; i--) {
 		char c = line[i];
@@ -20,7 +20,8 @@ int trim_trailing_blanks(char line[], int len) {
 	return i + 1;
 }
 
-void print_line_without_trailing_blanks(FILE* stream_in, FILE *stream_out,
+static void print_line_without_trailing_blanks(FILE* stream_in,
+		FILE *stream_out,
 		size_t maxline, int *pline_len, bool *preached_eof) {
 	char line[maxline];
 	int total_len = 0;
@@ -54,7 +55,7 @@ void print_line_without_trailing_blanks(FILE* stream_in, FILE *stream_out,
 	*preached_eof = reached_eof;
 }
 
-void print_new_line(FILE* stream_out) {
+static void print_new_line(FILE* stream_out) {
 	fprintf(stream_out, "\n");
 }
 
