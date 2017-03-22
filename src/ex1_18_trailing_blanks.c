@@ -3,6 +3,8 @@
 
 #include "lines.h"
 
+size_t trailing_blanks_buffer_size = 100;
+
 static bool is_blank_char(char c) {
 	return c == ' ' || c == '\t';
 }
@@ -29,7 +31,7 @@ static void print_line_without_trailing_blanks(FILE* stream_in,
 	bool reached_eof;
 	int len;
 	/* detect end of file and exit, or get first block of line */
-	if (!getline_chunk(stream_in, line, maxline, &len, &reached_eol,
+	if (!get_line_chunk(stream_in, line, maxline, &len, &reached_eol,
 			&reached_eof)) {
 		*pline_len = 0;
 		*preached_eof = true;
@@ -40,7 +42,8 @@ static void print_line_without_trailing_blanks(FILE* stream_in,
 	while (!reached_eol) {
 		total_len += len;
 		fprintf(stream_out, "%s", line);
-		getline_chunk(stream_in, line, maxline, &len, &reached_eol,
+		get_line_chunk(stream_in, line, maxline, &len,
+				&reached_eol,
 				&reached_eof);
 	}
 
@@ -58,11 +61,12 @@ static void print_new_line(FILE* stream_out) {
 	fprintf(stream_out, "\n");
 }
 
-void remove_trailing_blanks(FILE *stream_in, FILE *stream_out, size_t maxline) {
+void remove_trailing_blanks(FILE *stream_in, FILE *stream_out) {
 	while (true) {
 		int line_len;
 		bool reached_eof;
-		print_line_without_trailing_blanks(stream_in, stream_out, maxline,
+		print_line_without_trailing_blanks(stream_in, stream_out,
+				trailing_blanks_buffer_size,
 				&line_len, &reached_eof);
 		if (reached_eof)
 			break; /* don't add a new line if there wasn't in the input */

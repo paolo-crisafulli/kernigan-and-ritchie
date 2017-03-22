@@ -5,11 +5,13 @@
 #define MAXLINE 1000 /* maximum input line length */
 const int NUM_LEADING_CHARS_WITH_ELLIPSIS = 6;
 
+size_t longest_line_buffer_size = 100;
+
 int consume_end_of_line(FILE *stream_in, size_t buffer_size, bool *preached_eol) {
 	char garbage[buffer_size];
 	bool reached_eof;
 	int len;
-	getline_chunk(stream_in, garbage, buffer_size, &len, preached_eol,
+	get_line_chunk(stream_in, garbage, buffer_size, &len, preached_eol,
 			&reached_eof);
 	return len;
 }
@@ -25,7 +27,7 @@ void replace_string_end_with_ellipsis(char string[], int str_len) {
 bool get_first_line_chunk(FILE *stream_in, char line[], size_t maxlen,
 		int* plen, bool *preached_eol) {
 	bool reached_eof;
-	return getline_chunk(stream_in, line, maxlen, plen, preached_eol,
+	return get_line_chunk(stream_in, line, maxlen, plen, preached_eol,
 			&reached_eof);
 }
 
@@ -55,27 +57,23 @@ void copy(char to[], char from[]) {
 }
 
 /* print the longest input line */
-void print_longest_line_maxlen(FILE *stream_in, FILE *stream_out, size_t maxlen) {
+void print_longest_line(FILE *stream_in, FILE *stream_out) {
 	int len; /* current line length */
 	int max; /* maximum length seen so far */
-	char line[maxlen]; /* current input line */
-	char longest[maxlen]; /* longest line saved here */
+	char line[longest_line_buffer_size]; /* current input line */
+	char longest[longest_line_buffer_size]; /* longest line saved here */
 	longest[0] = '\0';
 	max = 0;
-	while (get_line(stream_in, line, maxlen, &len)) {
+	while (get_line(stream_in, line, longest_line_buffer_size, &len)) {
 		if (len > max) {
 			max = len;
 			copy(longest, line);
 		}
 	}
-	if (max >= maxlen) {
-		replace_string_end_with_ellipsis(longest, maxlen);
+	if (max >= longest_line_buffer_size) {
+		replace_string_end_with_ellipsis(longest, longest_line_buffer_size);
 	}
 
 	/* works also for empty input */
 	fprintf(stream_out, "%d (\"%s\")\n", max, longest);
-}
-
-void print_longest_line(FILE *stream_in, FILE *stream_out) {
-	print_longest_line_maxlen(stream_in, stream_out, MAXLINE);
 }

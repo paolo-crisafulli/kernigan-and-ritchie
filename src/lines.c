@@ -2,7 +2,7 @@
 #include <stdbool.h>
 #include "lines.h"
 
-bool getline_chunk(FILE *stream, char result[], size_t maxlen,
+bool get_line_chunk(FILE *stream, char result[], size_t maxlen,
 		int* presult_len, bool *preached_eol, bool *preached_eof) {
 	int c, len = 0;
 	while (len < maxlen - 1 && (c = fgetc(stream)) != EOF && c != '\n') {
